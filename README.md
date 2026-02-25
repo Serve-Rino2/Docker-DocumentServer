@@ -196,13 +196,14 @@ Below is the complete list of parameters that can be set using environment varia
   - **MSSQL** — schema to set as [DEFAULT_SCHEMA](https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-user-transact-sql?view=sql-server-ver17#default_schema---schema_name--null-), default `dbo`.  
 - **AMQP_URI**: The [AMQP URI](https://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to message broker server.
 - **AMQP_TYPE**: The message broker type. Supported values are `rabbitmq` or `activemq`. Defaults to `rabbitmq`.
+- **RABBIT_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened to the RabbitMQ message broker. Defaults to the soft limit from `ulimit -n`.
 - **REDIS_SERVER_HOST**: The IP address or the name of the host where the Redis server is running.
 - **REDIS_SERVER_PORT**:  The Redis server port number.
 - **REDIS_SERVER_USER**: The Redis server username. The username is not set by default.
 - **REDIS_SERVER_PASS**: The Redis server password. The password is not set by default.
 - **REDIS_SERVER_DB**: The Redis database index number to select. Defaults to `0`.  
 - **NGINX_WORKER_PROCESSES**: Defines the number of nginx worker processes.
-- **NGINX_WORKER_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened by a nginx worker process.
+- **NGINX_WORKER_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened by a nginx worker process. Defaults to the soft limit from `ulimit -n`.
 - **NGINX_ACCESS_LOG**: Defines whether access logging is enabled. Defaults to `false`.
 - **SECURE_LINK_SECRET**: Defines secret for the nginx config directive [secure_link_md5](https://nginx.org/en/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to `random string`.
 - **JWT_ENABLED**: Specifies the enabling the JSON Web Token validation by the ONLYOFFICE Document Server. Defaults to `true`.
@@ -214,6 +215,8 @@ Below is the complete list of parameters that can be set using environment varia
 - **ALLOW_PRIVATE_IP_ADDRESS**: Defines if it is allowed to connect private IP address or not. Defaults to `false`.
 - **USE_UNAUTHORIZED_STORAGE**: Set to `true` if using self-signed certificates for your storage server e.g. Nextcloud. Defaults to `false`
 - **GENERATE_FONTS**: When 'true' regenerates fonts list and the fonts thumbnails etc. at each start. Defaults to `true`
+- **ADMINPANEL_ENABLED**: Enables admin panel service autostart. Defaults to `false`.
+- **EXAMPLE_ENABLED**: Enables example service autostart. Defaults to `false`.
 - **METRICS_ENABLED**: Specifies the enabling StatsD for ONLYOFFICE Document Server. Defaults to `false`.
 - **METRICS_HOST**: Defines StatsD listening host. Defaults to `localhost`.
 - **METRICS_PORT**: Defines StatsD listening port. Defaults to `8125`.

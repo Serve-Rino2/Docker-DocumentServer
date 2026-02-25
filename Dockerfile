@@ -122,6 +122,7 @@ RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VER
     apt-get -y update && \
     service postgresql start && \
     apt-get -yq install /tmp/$PACKAGE_FILE && \
+    if [ "${PRODUCT_EDITION}" != "-ee" ] && [ "${PRODUCT_EDITION}" != "-de" ]; then rm -f /etc/supervisor/conf.d/ds-adminpanel.conf && sed -i 's/,adminpanel//' /etc/supervisor/conf.d/ds.conf; fi && \
     PGPASSWORD=$ONLYOFFICE_VALUE dropdb -h localhost -p 5432 -U $ONLYOFFICE_VALUE $ONLYOFFICE_VALUE && \
     sudo -u postgres psql -c "DROP ROLE onlyoffice;" && \
     service postgresql stop && \

@@ -84,7 +84,7 @@ elif [[ -f ${SSL_CERTIFICATE_PATH} ]]; then
 fi
 
 if [[ -n $NODE_EXTRA_ENVIRONMENT ]]; then
-  sed -i "s|^environment=.*$|&,NODE_EXTRA_CA_CERTS=${NODE_EXTRA_ENVIRONMENT}|" /etc/supervisor/conf.d/*.conf
+  sed -i "s|^environment=.*$|&,NODE_EXTRA_CA_CERTS=${NODE_EXTRA_ENVIRONMENT}|" ${SUPERVISOR_CONF_DIR}/*.conf
 fi
 
 CA_CERTIFICATES_PATH=${CA_CERTIFICATES_PATH:-${SSL_CERTIFICATES_DIR}/ca-certificates.pem}
@@ -105,7 +105,7 @@ NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
 NGINX_ACCESS_LOG=${NGINX_ACCESS_LOG:-false}
 # Limiting the maximum number of simultaneous connections due to possible memory shortage
-LIMIT=$(ulimit -n); [ $LIMIT -gt 1048576 ] && LIMIT=1048576
+LIMIT=$(ulimit -n); [ "$LIMIT" = "unlimited" ] || [ "$LIMIT" -gt 1048576 ] && LIMIT=1048576
 NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$LIMIT}
 RABBIT_CONNECTIONS=${RABBIT_CONNECTIONS:-$LIMIT}
 
@@ -135,6 +135,8 @@ if [[ ${PRODUCT_NAME}${PRODUCT_EDITION} == "documentserver" ]]; then
 else
   REDIS_ENABLED=true
 fi
+
+[[ "${PRODUCT_EDITION}" =~ ^-(ee|de)$ ]] && ADMINPANEL_AVAILABLE=true || ADMINPANEL_AVAILABLE=false
 
 ONLYOFFICE_DEFAULT_CONFIG=${CONF_DIR}/local.json
 ONLYOFFICE_LOG4JS_CONFIG=${CONF_DIR}/log4js/production.json
@@ -585,16 +587,25 @@ create_oracle_tbl() {
 
 update_welcome_page() {
   WELCOME_PAGE="${APP_DIR}-example/welcome/docker.html"
+  EXAMPLE_DISABLED_PAGE="${APP_DIR}-example/welcome/example-disabled.html"
+  if ${ADMINPANEL_AVAILABLE}; then
+    ADMIN_DISABLED_PAGE="${APP_DIR}-example/welcome/admin-disabled.html"
+    sed -Ei 's#sudo systemctl start ds-(adminpanel|example)#sudo docker exec $(sudo docker ps -q) supervisorctl start ds:\1#g' "$ADMIN_DISABLED_PAGE" "$EXAMPLE_DISABLED_PAGE"
+  else
+    sed -Ei 's#sudo systemctl start ds-example#sudo docker exec $(sudo docker ps -q) supervisorctl start ds:example#g' "$EXAMPLE_DISABLED_PAGE"
+  fi
+
+  TARGET_PAGES="$WELCOME_PAGE $EXAMPLE_DISABLED_PAGE${ADMIN_DISABLED_PAGE:+ $ADMIN_DISABLED_PAGE}"
   if [[ -e $WELCOME_PAGE ]]; then
     DOCKER_CONTAINER_ID=$(basename $(cat /proc/1/cpuset))
     (( ${#DOCKER_CONTAINER_ID} < 12 )) && DOCKER_CONTAINER_ID=$(hostname)
     if (( ${#DOCKER_CONTAINER_ID} >= 12 )); then
       if [[ -x $(command -v docker) ]]; then
         DOCKER_CONTAINER_NAME=$(docker inspect --format="{{.Name}}" $DOCKER_CONTAINER_ID)
-        sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_NAME#/}"'/' -i $WELCOME_PAGE
+        sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_NAME#/}"'/' -i ${TARGET_PAGES}
         JWT_MESSAGE=$(echo $JWT_MESSAGE | sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_NAME#/}"'/')
       else
-        sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_ID::12}"'/' -i $WELCOME_PAGE
+        sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_ID::12}"'/' -i ${TARGET_PAGES}
         JWT_MESSAGE=$(echo $JWT_MESSAGE | sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_ID::12}"'/')
       fi
     fi
@@ -672,10 +683,10 @@ update_release_date(){
 }
 
 # create base folders
-for i in converter docservice metrics adminpanel; do
-  mkdir -p "$DS_LOG_DIR/$i" && touch "$DS_LOG_DIR/$i"/{out,err}.log
+for SUPERVISOR_CONF in "${SUPERVISOR_CONF_DIR}"/ds-*.conf; do
+  SERVICE_NAME=$(sed "s|^${SUPERVISOR_CONF_DIR}/ds-||; s|\.conf$||" <<<"$SUPERVISOR_CONF")
+  mkdir -p "$DS_LOG_DIR/$SERVICE_NAME" && touch "$DS_LOG_DIR/$SERVICE_NAME"/{out,err}.log
 done
-
 mkdir -p "${DS_LOG_DIR}-example" && touch "${DS_LOG_DIR}-example"/{out,err}.log
 
 # create app folders
@@ -736,7 +747,8 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
         chmod 400 ${RABBITMQ_DATA}/.erlang.cookie
     fi
 
-    echo "ulimit -n $RABBIT_CONNECTIONS" >> /etc/default/rabbitmq-server
+    sed -i '/^[[:space:]]*ulimit[[:space:]]\+-n[[:space:]]\+/d' /etc/default/rabbitmq-server
+    printf 'ulimit -n %s\n' "${RABBIT_CONNECTIONS}" >> /etc/default/rabbitmq-server
 
     LOCAL_SERVICES+=("rabbitmq-server")
     # allow Rabbitmq startup after container kill
@@ -793,11 +805,11 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   update_nginx_settings
   
   if [ "${PLUGINS_ENABLED}" = "true" ]; then
-    echo -n Installing plugins, please wait...
-    start_process documentserver-pluginsmanager.sh -r false --update=\"${APP_DIR}/sdkjs-plugins/plugin-list-default.json\" >/dev/null
-    echo Done
+    ( documentserver-pluginsmanager.sh -r false --update="${APP_DIR}/sdkjs-plugins/plugin-list-default.json" >/dev/null; echo "[pluginsmanager] Plugins initialization finished" >/proc/1/fd/1 ) &
   fi
 
+  ${ADMINPANEL_AVAILABLE} && [ "${ADMINPANEL_ENABLED:-false}" = "true" ] && sed -i 's,autostart=false,autostart=true,' ${SUPERVISOR_CONF_DIR}/ds-adminpanel.conf
+  [ "${EXAMPLE_ENABLED:-false}" = "true" ] && sed -i 's,autostart=false,autostart=true,' ${SUPERVISOR_CONF_DIR}/ds-example.conf
   service supervisor start
   
   # start cron to enable log rotating
