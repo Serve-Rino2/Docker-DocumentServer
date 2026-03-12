@@ -125,7 +125,7 @@ target "documentserver-ucs" {
     tags = [
            "docker.io/${COMPANY_NAME}/${PRODUCT_NAME}${PRODUCT_EDITION}-ucs:${TAG}"
            ]
-    platforms = ["linux/amd64", "linux/arm64"]
+    platforms = ["${PLATFORM}"]
     args = {
         "PRODUCT_EDITION": "${PRODUCT_EDITION}"
         "PRODUCT_NAME": "${PRODUCT_NAME}"

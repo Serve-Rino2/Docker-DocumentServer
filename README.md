@@ -6,11 +6,13 @@
     - [Storing Data](#storing-data)
     - [Running ONLYOFFICE Document Server on Different Port](#running-onlyoffice-document-server-on-different-port)
     - [Running ONLYOFFICE Document Server using HTTPS](#running-onlyoffice-document-server-using-https)
+        + [Using the automatically generated Let's Encrypt SSL Certificates](#using-the-automatically-generated-lets-encrypt-ssl-certificates)
         + [Generation of Self Signed Certificates](#generation-of-self-signed-certificates)
         + [Strengthening the Server Security](#strengthening-the-server-security)
         + [Installation of the SSL Certificates](#installation-of-the-ssl-certificates)
         + [Available Configuration Parameters](#available-configuration-parameters)
-* [Installing ONLYOFFICE Document Server integrated with Community and Mail Servers](#installing-onlyoffice-document-server-integrated-with-community-and-mail-servers)
+* [Installing ONLYOFFICE Document Server using Docker Compose](#installing-onlyoffice-document-server-using-docker-compose)
+* [Installing ONLYOFFICE Document Server as a part of ONLYOFFICE Workspace](#installing-onlyoffice-document-server-as-a-part-of-onlyoffice-workspace)
 * [ONLYOFFICE Document Server ipv6 setup](#onlyoffice-document-server-ipv6-setup)
 * [Issues](#issues)
     - [Docker Issues](#docker-issues)
@@ -26,7 +28,7 @@ Starting from version 6.0, Document Server is distributed as ONLYOFFICE Docs. It
 
 ONLYOFFICE Docs can be used as a part of [ONLYOFFICE DocSpace](https://www.onlyoffice.com/docspace.aspx) and ONLYOFFICE Workspace, or with [third-party sync&share solutions](https://www.onlyoffice.com/all-connectors.aspx) (e.g. Odoo, Moodle, Nextcloud, ownCloud, Seafile, etc.) to enable collaborative editing within their interface.
 
-***Important*** Please update `docker-engine` to latest version (`20.10.21` as of writing this doc) before using it. We use `ubuntu:24.04` as base image and it older versions of docker have compatibility problems with it
+***Important*** Please update `docker-engine` to latest version (`20.10.21` as of writing this doc) before using it. We use `ubuntu:24.04` as base image and older versions of docker have compatibility problems with it
 
 ## Functionality ##
 
@@ -55,7 +57,7 @@ ONLYOFFICE Docs offer support for plugins allowing you to add specific features 
 * **CPU**: dual-core 2 GHz or higher
 * **Swap**: at least 2 GB
 * **HDD**: at least 2 GB of free space
-* **Distribution**: 64-bit Red Hat, CentOS or other compatible distributive with kernel version 3.8 or later, 64-bit Debian, Ubuntu or other compatible distributive with kernel version 3.8 or later
+* **Distribution**: 64-bit Red Hat, CentOS or other compatible distribution with kernel version 3.8 or later, 64-bit Debian, Ubuntu or other compatible distribution with kernel version 3.8 or later
 * **Docker**: version 1.9.0 or later
 
 ## Running Docker Image
@@ -260,7 +262,7 @@ Then launch containers on it using the 'docker run --net onlyoffice' option:
 
 **STEP 2**: Install MySQL.
 
-Follow [these steps](#installing-mysql) to install MySQL server.
+Install MySQL server. You can find MySQL installation instructions in the [official MySQL documentation](https://dev.mysql.com/doc/).
 
 **STEP 3**: Generate JWT Secret
 
@@ -351,14 +353,14 @@ wget https://download.onlyoffice.com/install/workspace-install.sh
 **STEP 2**: Install ONLYOFFICE Workspace executing the following command:
 
 ```bash
-workspace-install.sh -md yourdomain.com
+bash workspace-install.sh -md yourdomain.com
 ```
 
 Or, use [docker-compose](https://docs.docker.com/compose/install "docker-compose"). First you need to clone this [GitHub repository](https://github.com/ONLYOFFICE/Docker-CommunityServer/):
 
 ```bash
 wget https://raw.githubusercontent.com/ONLYOFFICE/Docker-CommunityServer/master/docker-compose.groups.yml
-docker-compose up -d
+docker-compose -f docker-compose.groups.yml up -d
 ```
 
 ## ONLYOFFICE Document Server ipv6 setup
