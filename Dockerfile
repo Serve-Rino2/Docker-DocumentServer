@@ -88,6 +88,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     wget -O sqlplus.zip ${OC_DOWNLOAD_URL}/instantclient-sqlplus-linux.$(dpkg --print-architecture | sed 's/amd64/x64/')-${OC_FILE_SUFFIX}.zip && \
     unzip -o basic.zip -d /usr/share && \
     unzip -o sqlplus.zip -d /usr/share && \
+    rm -f basic.zip sqlplus.zip && \
     mv /usr/share/instantclient_${OC_VER_DIR} /usr/share/instantclient && \
     find /usr/lib /lib -name "libaio.so.1$PACKAGE_SUFFIX" -exec bash -c 'ln -sf "$0" "$(dirname "$0")/libaio.so.1"' {} \; && \
     service postgresql stop && \
