@@ -1,0 +1,66 @@
+## Project Overview
+
+ONLYOFFICE Docker-DocumentServer — single-container Docker image for ONLYOFFICE Docs with all services (docservice, converter, nginx, PostgreSQL, Redis, RabbitMQ) managed by Supervisor.
+
+## Tech Stack
+
+Docker, Docker BuildX, Bash, Nginx, Supervisor, PostgreSQL/MySQL/MariaDB/MSSQL/Oracle, Redis, RabbitMQ/ActiveMQ
+
+## Project Structure
+
+```
+Dockerfile              — Main image (Ubuntu 24.04 base)
+production.dockerfile   — Stable/release image builder
+docker-compose.yml      — Local dev (documentserver + postgres + rabbitmq)
+docker-bake.hcl         — BuildX multi-platform config
+Makefile                — Build system (image, deploy, clean targets)
+run-document-server.sh  — Main entrypoint script (842 lines)
+config/supervisor/ds/        — Supervisor service configs (ds, ds-adminpanel, ds-converter, ds-docservice, ds-example, ds-metrics)
+config/supervisor/supervisor — Shell script for supervisord startup
+tests/                  — Integration tests (DB/AMQP/SSL matrix)
+fonts/                  — Custom fonts directory
+oracle/                 — Oracle SQLPlus wrapper
+```
+
+## Build & Run
+
+```bash
+# Build with Makefile
+make image PRODUCT_VERSION=9.2.0 BUILD_NUMBER=1
+
+# Build with Docker
+docker build -t onlyoffice/documentserver .
+
+# Run
+docker run -i -t -d -p 80:80 onlyoffice/documentserver
+
+# Docker Compose (with postgres + rabbitmq)
+docker-compose up -d
+
+# Run tests
+cd tests && ./test.sh
+```
+
+## Key Patterns
+
+- Single-container architecture: all services in one image via Supervisor
+- Three editions: Community, Enterprise (-ee), Developer (-de)
+- `run-document-server.sh` handles all configuration, DB init, service startup
+- Multi-arch support: amd64, arm64
+- Multiple database backends via DB_TYPE environment variable
+- SSL/TLS with Let's Encrypt integration (Certbot)
+- Non-root execution possible
+
+## Review Focus
+
+**Security**: JWT validation, SSL/TLS config, credential handling in entrypoint
+**Shell**: `run-document-server.sh` is critical — quoting, error handling, DB initialization logic
+**Docker**: Image size, layer count, base image updates
+**Supervisor**: Service configs, process dependencies, restart policies
+**Config**: Default ports, exposed services, database connection strings
+
+## Git Workflow
+
+- **Main branch**: `master`
+- **Integration branch**: `develop`
+- **Branch naming**: `feature/*`, `bugfix/*`, `hotfix/*`, `release/*`
