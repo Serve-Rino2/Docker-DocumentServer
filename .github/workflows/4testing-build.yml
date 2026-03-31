@@ -244,6 +244,8 @@ jobs:
           EDITION: ${{ matrix.edition }}
           BUILD_NUMBER: ${{ github.event.inputs.build }}
           BRANCH_NAME: ${{ github.ref_name }}
+          DOCKER_PAT_USERNAME: ${{ secrets.DOCKER_PAT_USERNAME }}
+          DOCKER_PAT_ACCESS_TOKEN: ${{ secrets.DOCKER_PAT_ACCESS_TOKEN }}
         run: |
            case "${EDITION}" in
              community)
@@ -317,3 +319,37 @@ jobs:
            fi
 
            docker buildx imagetools create "${PUSH_TAGS[@]}" "${FROM_TAGS[@]}"
+
+           ### ==>> Cleanup platform-specific tags ###
+
+           REPO="${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}"
+
+           echo "Getting Docker Hub token..."
+           TOKEN=$(curl -s -X POST "https://hub.docker.com/v2/users/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\": \"${DOCKER_PAT_USERNAME}\", \"password\": \"${DOCKER_PAT_ACCESS_TOKEN}\"}" \
+            | jq -r .token)
+
+           if [ -z "${TOKEN}" ] || [ "${TOKEN}" = "null" ]; then
+             echo "ERROR: Failed to get Docker Hub token"
+             exit 1
+           fi
+           echo "Docker Hub token obtained successfully"
+
+           for IMG in "${FROM_TAGS[@]}"; do
+             PLATFORM_TAG="${IMG##*:}"
+             echo "Deleting tag: ${IMG}"
+
+             HTTP_STATUS=$(curl -s -o /tmp/delete_response.json -w "%{http_code}" -X DELETE \
+               -H "Authorization: JWT ${TOKEN}" \
+               "https://hub.docker.com/v2/repositories/${REPO}/tags/${PLATFORM_TAG}/")
+
+             echo "Response HTTP status: ${HTTP_STATUS}"
+             echo "Response body: $(cat /tmp/delete_response.json)"
+
+             if [ "${HTTP_STATUS}" = "204" ]; then
+               echo "Successfully deleted: ${IMG}"
+             else
+               echo "WARNING: Unexpected status ${HTTP_STATUS} when deleting ${IMG}"
+             fi
+           done
