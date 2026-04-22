@@ -680,12 +680,24 @@ update_release_date(){
   echo ${RELEASE_DATE} > ${DS_RELEASE_DATE}
 }
 
+# Fix to resolve the `unknown "cache_tag" variable` error
+start_process documentserver-flush-cache.sh -r false
+
 # create base folders
 for SUPERVISOR_CONF in "${SUPERVISOR_CONF_DIR}"/ds-*.conf; do
   SERVICE_NAME=$(sed "s|^${SUPERVISOR_CONF_DIR}/ds-||; s|\.conf$||" <<<"$SUPERVISOR_CONF")
   mkdir -p "$DS_LOG_DIR/$SERVICE_NAME" && touch "$DS_LOG_DIR/$SERVICE_NAME"/{out,err}.log
 done
 mkdir -p "${DS_LOG_DIR}-example" && touch "${DS_LOG_DIR}-example"/{out,err}.log
+
+# make awaiting page when container restarting
+if [ ! -f /etc/nginx/includes/ds-0awaiting.conf ]; then
+    ln -s ${NGINX_ONLYOFFICE_PATH}/includes/ds-0awaiting.conf /etc/nginx/includes/ds-0awaiting.conf
+fi
+
+# nginx used as a proxy, and as data container status service.
+# it run in all cases.
+service nginx start
 
 # create app folders
 for i in ${DS_LIB_DIR}/App_Data/cache/files ${DS_LIB_DIR}/App_Data/docbuilder ${DS_LIB_DIR}-example/files; do
@@ -817,12 +829,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   service cron start
 fi
 
-# Fix to resolve the `unknown "cache_tag" variable` error
-start_process documentserver-flush-cache.sh -r false
-
-# nginx used as a proxy, and as data container status service.
-# it run in all cases.
-service nginx start
+documentserver-wait-ready.sh
 
 if [ "${LETS_ENCRYPT_DOMAIN}" != "" -a "${LETS_ENCRYPT_MAIL}" != "" ]; then
   if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
