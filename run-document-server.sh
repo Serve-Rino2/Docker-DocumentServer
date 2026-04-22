@@ -692,7 +692,7 @@ mkdir -p "${DS_LOG_DIR}-example" && touch "${DS_LOG_DIR}-example"/{out,err}.log
 
 # make awaiting page when container restarting
 if [ ! -f /etc/nginx/includes/ds-0awaiting.conf ]; then
-    ln -s ${NGINX_ONLYOFFICE_PATH}/includes/ds-0awaiting.conf /etc/nginx/includes/ds-0awaiting.conf
+    ln -s "${NGINX_ONLYOFFICE_PATH}/includes/ds-0awaiting.conf" /etc/nginx/includes/ds-0awaiting.conf
 fi
 
 # nginx used as a proxy, and as data container status service.
