@@ -27,7 +27,7 @@ DOCKER_ARCH := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME)_$(DOCKER_TAG).tar.gz
 .PHONY: all clean clean-docker image deploy docker
 
 $(DOCKER_DUMMY):
-	docker pull ubuntu:22.04
+	docker pull ubuntu:24.04
 	docker build \
 		--build-arg COMPANY_NAME=$(COMPANY_NAME_LOW) \
 		--build-arg PRODUCT_NAME=$(PRODUCT_NAME) \

@@ -118,7 +118,7 @@ fi
 
 [[ "${JWT_ENABLED}" == "true" && -z "${JWT_SECRET}" ]] && JWT_MESSAGE='JWT is enabled by default. A random secret is generated automatically. Run the command "docker exec $(sudo docker ps -q) sudo documentserver-jwt-status.sh" to get information about JWT.'
 
-JWT_SECRET=${JWT_SECRET:-$(pwgen -s 32)}
+JWT_SECRET=${JWT_SECRET:-$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
@@ -664,7 +664,7 @@ update_nginx_settings(){
     sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_CONF}
   fi
 
-  start_process documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
+  start_process documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 20)} -r false
 }
 
 update_log_settings(){
