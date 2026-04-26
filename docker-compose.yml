@@ -21,7 +21,7 @@ services:
       #- JWT_IN_BODY=true
     ports:
       - '80:8899'
-      - '443:443'
+      - '443:446'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/info/info.json"]
       interval: 30s
